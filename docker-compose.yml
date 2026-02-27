@@ -4,12 +4,13 @@ services:
     container_name: irrigation-app
     ports:
       - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://irrigation_user:irrigation_pass@db:5432/irrigation_db
     depends_on:
       db:
         condition: service_healthy
     networks:
       - irrigation-network
-
   db:
     image: postgres:15-alpine
     container_name: irrigation-db
