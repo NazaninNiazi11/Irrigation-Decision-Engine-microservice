@@ -90,6 +90,38 @@ The application uses three main tables:
 ├── requirements.txt
 └── README.md
 ```
+## Frontend Interface
+
+A minimal HTML frontend is included in the `frontend/` directory.
+
+The interface allows users to:
+
+- Register a crop with its environmental thresholds
+- Submit sensor data for a crop
+- Evaluate irrigation decisions based on sensor readings
+
+### How to Use
+
+1. Start the backend service:
+
+```
+docker compose up --build
+```
+
+2. Open the frontend from file explorer:
+
+```
+frontend/index.html
+```
+
+3. Use the interface in this order:
+
+- Create a crop
+- Submit sensor data
+- Enter the returned sensor ID
+- Click **Evaluate Decision**
+
+The frontend communicates with the FastAPI microservice using REST API calls.
 
 ## Team
 
