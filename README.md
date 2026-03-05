@@ -98,6 +98,7 @@ The application uses three main tables:
 | Nazanin Niazi     | [@NazaninNiazi11](https://github.com/NazaninNiazi11) |
 | Shada Daab        | [@shadatr](https://github.com/shadatr)               |
 | Özge Zelal Küçük  | [@ozge-devops](https://github.com/ozge-devops)       |
+| Danya Eusmanaga   | [@danyaosman](https://github.com/danyaosman)       |
 
 ## Course
 
