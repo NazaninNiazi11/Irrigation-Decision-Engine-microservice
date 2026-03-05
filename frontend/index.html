@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Irrigation Decision Engine</title>
+</head>
+
+<body>
+
+<h1>Irrigation Decision Engine</h1>
+
+<!-- REGISTER CROP -->
+
+<h2>Register Crop</h2>
+
+<input id="cropName" placeholder="Crop Name (Wheat)">
+<input id="species" placeholder="Species">
+<input id="minMoisture" placeholder="Min Soil Moisture">
+<input id="maxMoisture" placeholder="Max Soil Moisture">
+<input id="tempMin" placeholder="Min Temp">
+<input id="tempMax" placeholder="Max Temp">
+<input id="waterReq" placeholder="Water Requirement mm">
+
+<button onclick="createCrop()">Create Crop</button>
+
+<p id="cropResult"></p>
+
+<hr>
+
+<!-- SENSOR DATA -->
+
+<h2>Submit Sensor Data</h2>
+
+<input id="cropId" placeholder="Crop ID">
+<input id="moisture" placeholder="Soil Moisture">
+<input id="temp" placeholder="Temperature">
+<input id="humidity" placeholder="Humidity">
+
+<button onclick="submitSensor()">Submit Sensor Data</button>
+
+<p id="sensorResult"></p>
+
+<hr>
+
+<!-- DECISION -->
+
+<h2>Evaluate Irrigation Decision</h2>
+
+<label>Sensor Data ID:</label>
+<input id="sensorIdInput" type="number" placeholder="Enter sensor data ID">
+
+<button onclick="evaluateDecision()">Evaluate Decision</button>
+
+<p id="decisionResult"></p>
+
+<script>
+/* -------------------- CREATE CROP -------------------- */
+
+async function createCrop(){
+
+const response = await fetch("http://localhost:8000/crops",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+name: document.getElementById("cropName").value,
+species: document.getElementById("species").value,
+min_soil_moisture: Number(document.getElementById("minMoisture").value),
+max_soil_moisture: Number(document.getElementById("maxMoisture").value),
+optimal_temperature_min: Number(document.getElementById("tempMin").value),
+optimal_temperature_max: Number(document.getElementById("tempMax").value),
+water_requirement_mm: Number(document.getElementById("waterReq").value)
+})
+})
+
+const data = await response.json()
+
+document.getElementById("cropResult").innerText =
+"Crop created with ID: " + data.id
+
+document.getElementById("cropId").value = data.id
+
+}
+
+/* -------------------- SENSOR DATA -------------------- */
+
+async function submitSensor(){
+
+const response = await fetch("http://localhost:8000/sensor-data",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+crop_id: Number(document.getElementById("cropId").value),
+soil_moisture: Number(document.getElementById("moisture").value),
+temperature: Number(document.getElementById("temp").value),
+humidity: Number(document.getElementById("humidity").value)
+})
+})
+
+const data = await response.json()
+
+sensorId = data.id
+
+document.getElementById("sensorResult").innerText =
+"Sensor data stored with ID: " + sensorId
+
+}
+
+/* -------------------- DECISION -------------------- */
+
+async function evaluateDecision(){
+
+const sensorId = document.getElementById("sensorIdInput").value
+
+if(!sensorId){
+alert("Please enter a sensor data ID")
+return
+}
+
+const response = await fetch(
+`http://localhost:8000/decisions/evaluate/${sensorId}`,
+{
+method:"POST"
+}
+)
+
+const data = await response.json()
+
+document.getElementById("decisionResult").innerText =
+"Stress Level: " + data.stress_level +
+" | Irrigate: " + data.should_irrigate +
+" | Water Needed: " + data.recommended_water_mm +
+" mm | Reason: " + data.reason
+
+}
+
+</script>
+
+</body>
+</html>

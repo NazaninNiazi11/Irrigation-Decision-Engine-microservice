@@ -86,4 +86,4 @@ class IrrigationService:
         """Evaluate sensor data and store an irrigation decision."""
         sensor = db.query(SensorData).filter(SensorData.id == sensor_data_id).first()
         if not sensor:
-            raise ValueError(f"SensorData with id {sensor_
+            raise ValueError(f"SensorData with id {sensor_data_id} not found")
