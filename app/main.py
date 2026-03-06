@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from app.database.connection import engine, Base
 from app.interfaces.api import router
+from app.interfaces.auth_routes import auth_router
 
 # Import models so Base.metadata knows about them
 from app.models import models  # noqa: F401
@@ -30,4 +31,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth_router)
 app.include_router(router)

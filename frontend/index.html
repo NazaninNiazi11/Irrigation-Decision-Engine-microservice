@@ -8,6 +8,29 @@
 
 <h1>Irrigation Decision Engine</h1>
 
+<!-- AUTH SECTION -->
+
+<div id="authSection">
+<h2>Authentication</h2>
+
+<div id="loginForm">
+<input id="authUsername" placeholder="Username (min 3 characters)">
+<input id="authPassword" placeholder="Password (min 6 characters)" type="password">
+<button onclick="register()">Register</button>
+<button onclick="login()">Login</button>
+<p id="authResult" style="color:red;"></p>
+</div>
+
+<div id="logoutSection" style="display:none;">
+<p>Logged in as: <strong id="loggedInUser"></strong></p>
+<button onclick="logout()">Logout</button>
+</div>
+</div>
+
+<hr>
+
+<div id="appContent" style="display:none;">
+
 <!-- REGISTER CROP -->
 
 <h2>Register Crop</h2>
@@ -52,16 +75,117 @@
 
 <p id="decisionResult"></p>
 
+</div>
+
 <script>
+/* -------------------- ERROR FORMATTING -------------------- */
+
+function formatError(detail) {
+if (typeof detail === "string") return detail
+if (Array.isArray(detail)) {
+return detail.map(function(err) {
+var field = err.loc ? err.loc[err.loc.length - 1] : "field"
+return field + ": " + err.msg
+}).join("; ")
+}
+return "Something went wrong"
+}
+
+/* -------------------- AUTH HELPERS -------------------- */
+
+function getToken() {
+return localStorage.getItem("token")
+}
+
+function authHeaders() {
+const token = getToken()
+const headers = { "Content-Type": "application/json" }
+if (token) {
+headers["Authorization"] = "Bearer " + token
+}
+return headers
+}
+
+function updateAuthUI() {
+const token = getToken()
+const username = localStorage.getItem("username")
+if (token) {
+document.getElementById("loginForm").style.display = "none"
+document.getElementById("logoutSection").style.display = "block"
+document.getElementById("loggedInUser").innerText = username || "User"
+document.getElementById("appContent").style.display = "block"
+} else {
+document.getElementById("loginForm").style.display = "block"
+document.getElementById("logoutSection").style.display = "none"
+document.getElementById("appContent").style.display = "none"
+}
+}
+
+updateAuthUI()
+
+/* -------------------- REGISTER -------------------- */
+
+async function register() {
+const username = document.getElementById("authUsername").value
+const password = document.getElementById("authPassword").value
+
+const response = await fetch("http://localhost:8000/auth/register", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({ username, password })
+})
+
+const data = await response.json()
+
+if (response.ok) {
+document.getElementById("authResult").style.color = "green"
+document.getElementById("authResult").innerText = "Registered! You can now login."
+} else {
+document.getElementById("authResult").style.color = "red"
+document.getElementById("authResult").innerText = "Error: " + formatError(data.detail)
+}
+}
+
+/* -------------------- LOGIN -------------------- */
+
+async function login() {
+const username = document.getElementById("authUsername").value
+const password = document.getElementById("authPassword").value
+
+const response = await fetch("http://localhost:8000/auth/login", {
+method: "POST",
+headers: { "Content-Type": "application/x-www-form-urlencoded" },
+body: "username=" + encodeURIComponent(username) + "&password=" + encodeURIComponent(password)
+})
+
+const data = await response.json()
+
+if (response.ok) {
+localStorage.setItem("token", data.access_token)
+localStorage.setItem("username", username)
+document.getElementById("authResult").innerText = ""
+updateAuthUI()
+} else {
+document.getElementById("authResult").style.color = "red"
+document.getElementById("authResult").innerText = "Error: " + formatError(data.detail)
+}
+}
+
+/* -------------------- LOGOUT -------------------- */
+
+function logout() {
+localStorage.removeItem("token")
+localStorage.removeItem("username")
+updateAuthUI()
+}
+
 /* -------------------- CREATE CROP -------------------- */
 
 async function createCrop(){
 
 const response = await fetch("http://localhost:8000/crops",{
 method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
+headers: authHeaders(),
 body:JSON.stringify({
 name: document.getElementById("cropName").value,
 species: document.getElementById("species").value,
@@ -75,10 +199,14 @@ water_requirement_mm: Number(document.getElementById("waterReq").value)
 
 const data = await response.json()
 
+if (response.ok) {
 document.getElementById("cropResult").innerText =
 "Crop created with ID: " + data.id
-
 document.getElementById("cropId").value = data.id
+} else {
+document.getElementById("cropResult").innerText =
+"Error: " + (data.detail || "Failed to create crop")
+}
 
 }
 
@@ -88,9 +216,7 @@ async function submitSensor(){
 
 const response = await fetch("http://localhost:8000/sensor-data",{
 method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
+headers: authHeaders(),
 body:JSON.stringify({
 crop_id: Number(document.getElementById("cropId").value),
 soil_moisture: Number(document.getElementById("moisture").value),
@@ -101,10 +227,14 @@ humidity: Number(document.getElementById("humidity").value)
 
 const data = await response.json()
 
+if (response.ok) {
 sensorId = data.id
-
 document.getElementById("sensorResult").innerText =
 "Sensor data stored with ID: " + sensorId
+} else {
+document.getElementById("sensorResult").innerText =
+"Error: " + (data.detail || "Failed to submit sensor data")
+}
 
 }
 
@@ -122,17 +252,23 @@ return
 const response = await fetch(
 `http://localhost:8000/decisions/evaluate/${sensorId}`,
 {
-method:"POST"
+method:"POST",
+headers: authHeaders()
 }
 )
 
 const data = await response.json()
 
+if (response.ok) {
 document.getElementById("decisionResult").innerText =
 "Stress Level: " + data.stress_level +
 " | Irrigate: " + data.should_irrigate +
 " | Water Needed: " + data.recommended_water_mm +
 " mm | Reason: " + data.reason
+} else {
+document.getElementById("decisionResult").innerText =
+"Error: " + (data.detail || "Failed to evaluate decision")
+}
 
 }
 
