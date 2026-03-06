@@ -33,6 +33,37 @@ This starts two containers:
 - Health check: http://localhost:8000/health
 - Swagger UI: http://localhost:8000/docs
 
+## Authentication
+
+All endpoints (except `/health`) require a JWT Bearer token. Register a user, log in to get a token, then include it in requests.
+
+### Auth Endpoints
+| Method | Endpoint          | Description                              |
+|--------|-------------------|------------------------------------------|
+| POST   | `/auth/register`  | Create account (`username`, `password`)  |
+| POST   | `/auth/login`     | Get JWT token (form-urlencoded)          |
+
+### Using the token
+
+```bash
+# Register
+curl -X POST http://localhost:8000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin", "password": "pass123"}'
+
+# Login
+curl -X POST http://localhost:8000/auth/login \
+  -d "username=admin&password=pass123"
+
+# Use token on protected endpoints
+curl http://localhost:8000/crops \
+  -H "Authorization: Bearer <your_token>"
+```
+
+In Swagger UI (`/docs`), click the **Authorize** button and paste the token.
+
+The frontend handles auth automatically — register and sign in, then use the app normally.
+
 ## API Endpoints
 
 ### Crops
@@ -60,6 +91,7 @@ This starts two containers:
 
 The application uses three main tables:
 
+- **users** — Registered users with hashed passwords
 - **crops** — Crop information with moisture and temperature thresholds
 - **sensor_data** — Environmental and soil sensor readings
 - **irrigation_decisions** — Generated irrigation recommendations with stress analysis
@@ -73,7 +105,8 @@ The application uses three main tables:
 │   │   └── connection.py
 │   ├── interfaces/
 │   │   ├── __init__.py
-│   │   └── api.py
+│   │   ├── api.py
+│   │   └── auth_routes.py
 │   ├── models/
 │   │   ├── __init__.py
 │   │   └── models.py
@@ -84,6 +117,7 @@ The application uses three main tables:
 │   │   ├── __init__.py
 │   │   └── irrigation_service.py
 │   ├── __init__.py
+│   ├── auth.py
 │   └── main.py
 ├── Dockerfile
 ├── docker-compose.yml
@@ -116,6 +150,7 @@ frontend/index.html
 
 3. Use the interface in this order:
 
+- Register an account and sign in
 - Create a crop
 - Submit sensor data
 - Enter the returned sensor ID
