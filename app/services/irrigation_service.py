@@ -87,3 +87,24 @@ class IrrigationService:
         sensor = db.query(SensorData).filter(SensorData.id == sensor_data_id).first()
         if not sensor:
             raise ValueError(f"SensorData with id {sensor_data_id} not found")
+
+        crop = db.query(Crop).filter(Crop.id == sensor.crop_id).first()
+        if not crop:
+            raise ValueError(f"Crop with id {sensor.crop_id} not found")
+
+        result = IrrigationService.calculate_water_stress(sensor, crop)
+
+        decision = IrrigationDecision(
+            crop_id=crop.id,
+            sensor_data_id=sensor.id,
+            water_stress_index=result["water_stress_index"],
+            stress_level=result["stress_level"],
+            should_irrigate=result["should_irrigate"],
+            recommended_water_mm=result["recommended_water_mm"],
+            reason=result["reason"],
+            status="pending",
+        )
+        db.add(decision)
+        db.commit()
+        db.refresh(decision)
+        return decision
