@@ -4,6 +4,7 @@ from sqlalchemy.sql import func
 import enum
 
 from app.database.connection import Base
+.
 
 
 class IrrigationStatus(str, enum.Enum):
