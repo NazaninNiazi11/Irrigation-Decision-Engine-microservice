@@ -1,0 +1,112 @@
+[
+  {
+    "key": "wheat",
+    "name": "Wheat",
+    "species": "Triticum aestivum",
+    "description": "Cool-season cereal grain; moderate water needs with drought tolerance after establishment.",
+    "min_soil_moisture": 25,
+    "max_soil_moisture": 65,
+    "optimal_temperature_min": 12,
+    "optimal_temperature_max": 25,
+    "water_requirement_mm": 5.0
+  },
+  {
+    "key": "rice",
+    "name": "Rice",
+    "species": "Oryza sativa",
+    "description": "Semi-aquatic cereal requiring flooded or saturated soil conditions for most of the growing season.",
+    "min_soil_moisture": 60,
+    "max_soil_moisture": 95,
+    "optimal_temperature_min": 20,
+    "optimal_temperature_max": 35,
+    "water_requirement_mm": 8.0
+  },
+  {
+    "key": "corn",
+    "name": "Corn / Maize",
+    "species": "Zea mays",
+    "description": "Warm-season C4 grass with high water demand, especially during tasseling and grain fill.",
+    "min_soil_moisture": 30,
+    "max_soil_moisture": 70,
+    "optimal_temperature_min": 18,
+    "optimal_temperature_max": 33,
+    "water_requirement_mm": 6.5
+  },
+  {
+    "key": "tomato",
+    "name": "Tomato",
+    "species": "Solanum lycopersicum",
+    "description": "Warm-season fruit crop sensitive to both over- and under-watering; consistent moisture reduces cracking.",
+    "min_soil_moisture": 35,
+    "max_soil_moisture": 75,
+    "optimal_temperature_min": 18,
+    "optimal_temperature_max": 29,
+    "water_requirement_mm": 5.5
+  },
+  {
+    "key": "potato",
+    "name": "Potato",
+    "species": "Solanum tuberosum",
+    "description": "Cool-season tuber crop; uniform soil moisture is critical during tuber initiation and bulking.",
+    "min_soil_moisture": 30,
+    "max_soil_moisture": 70,
+    "optimal_temperature_min": 15,
+    "optimal_temperature_max": 25,
+    "water_requirement_mm": 5.0
+  },
+  {
+    "key": "soybean",
+    "name": "Soybean",
+    "species": "Glycine max",
+    "description": "Warm-season legume; water demand peaks during flowering and pod fill stages.",
+    "min_soil_moisture": 30,
+    "max_soil_moisture": 65,
+    "optimal_temperature_min": 20,
+    "optimal_temperature_max": 30,
+    "water_requirement_mm": 5.5
+  },
+  {
+    "key": "cotton",
+    "name": "Cotton",
+    "species": "Gossypium hirsutum",
+    "description": "Warm-season fiber crop with deep roots; tolerates heat but needs reliable moisture during boll development.",
+    "min_soil_moisture": 25,
+    "max_soil_moisture": 60,
+    "optimal_temperature_min": 20,
+    "optimal_temperature_max": 35,
+    "water_requirement_mm": 6.0
+  },
+  {
+    "key": "lettuce",
+    "name": "Lettuce",
+    "species": "Lactuca sativa",
+    "description": "Cool-season leafy green with shallow roots; requires frequent, light irrigation to prevent wilting.",
+    "min_soil_moisture": 40,
+    "max_soil_moisture": 80,
+    "optimal_temperature_min": 10,
+    "optimal_temperature_max": 22,
+    "water_requirement_mm": 4.0
+  },
+  {
+    "key": "sugarcane",
+    "name": "Sugarcane",
+    "species": "Saccharum officinarum",
+    "description": "Tropical perennial grass with very high water use; long growing season requires sustained irrigation.",
+    "min_soil_moisture": 40,
+    "max_soil_moisture": 80,
+    "optimal_temperature_min": 22,
+    "optimal_temperature_max": 38,
+    "water_requirement_mm": 7.0
+  },
+  {
+    "key": "barley",
+    "name": "Barley",
+    "species": "Hordeum vulgare",
+    "description": "Hardy cool-season cereal; more drought-tolerant than wheat with lower overall water requirements.",
+    "min_soil_moisture": 20,
+    "max_soil_moisture": 60,
+    "optimal_temperature_min": 10,
+    "optimal_temperature_max": 25,
+    "water_requirement_mm": 4.5
+  }
+]

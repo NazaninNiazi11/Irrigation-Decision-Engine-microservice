@@ -1,3 +1,5 @@
+import json
+from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List
@@ -5,7 +7,7 @@ from typing import List
 from app.database.connection import get_db
 from app.models.models import Crop, SensorData, IrrigationDecision, User
 from app.schemas.schemas import (
-    CropCreate, CropResponse,
+    CropCreate, CropResponse, CropProfileResponse,
     SensorDataCreate, SensorDataResponse,
     IrrigationDecisionResponse, IrrigationDecisionUpdate,
 )
@@ -14,12 +16,24 @@ from app.auth import get_current_user
 
 router = APIRouter()
 
+# ── Load crop profiles once at module level ──
+_profiles_path = Path(__file__).resolve().parent.parent / "data" / "crop_profiles.json"
+_crop_profiles: List[dict] = json.loads(_profiles_path.read_text())
+
 
 # ── Health ──
 
 @router.get("/health")
 def health_check():
     return {"status": "ok"}
+
+
+# ── Crop Profiles (no auth) ──
+
+@router.get("/crop-profiles", response_model=List[CropProfileResponse], tags=["Crops"])
+def list_crop_profiles():
+    """Return predefined crop profiles with scientifically-accurate default parameters."""
+    return _crop_profiles
 
 
 # ── Crops ──

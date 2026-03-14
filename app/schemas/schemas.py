@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 
@@ -50,6 +50,18 @@ class CropResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class CropProfileResponse(BaseModel):
+    key: str
+    name: str
+    species: str
+    description: Optional[str] = None
+    min_soil_moisture: float
+    max_soil_moisture: float
+    optimal_temperature_min: float
+    optimal_temperature_max: float
+    water_requirement_mm: float
 
 
 # ── Sensor Data Schemas ──

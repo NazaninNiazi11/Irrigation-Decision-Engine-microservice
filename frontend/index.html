@@ -287,6 +287,16 @@ body::after {
   font-weight: 400;
 }
 
+select.input {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234a6b52' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+  cursor: pointer;
+}
+
 .auth-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -736,6 +746,12 @@ body::after {
     <div class="card-divider"></div>
 
     <div class="form-row">
+      <div class="form-field span-2">
+        <label for="cropProfileSelect">Predefined Profile</label>
+        <select id="cropProfileSelect" class="input" onchange="applyCropProfile()">
+          <option value="">Select a predefined crop or enter manually</option>
+        </select>
+      </div>
       <div class="form-field">
         <label for="cropName">Crop Name</label>
         <input id="cropName" class="input" placeholder="e.g. Wheat">
@@ -891,6 +907,44 @@ function setLoading(btnId, loading) {
     btn.disabled = false
   }
 }
+
+/* -------------------- CROP PROFILES -------------------- */
+
+var _cropProfiles = []
+
+async function loadCropProfiles() {
+  try {
+    var response = await fetch("http://localhost:8000/crop-profiles")
+    if (response.ok) {
+      _cropProfiles = await response.json()
+      var select = document.getElementById("cropProfileSelect")
+      _cropProfiles.forEach(function(p) {
+        var opt = document.createElement("option")
+        opt.value = p.key
+        opt.textContent = p.name + " (" + p.species + ")"
+        select.appendChild(opt)
+      })
+    }
+  } catch (e) {
+    // Graceful degradation: dropdown stays empty, manual entry still works
+  }
+}
+
+function applyCropProfile() {
+  var key = document.getElementById("cropProfileSelect").value
+  if (!key) return
+  var profile = _cropProfiles.find(function(p) { return p.key === key })
+  if (!profile) return
+  document.getElementById("cropName").value = profile.name
+  document.getElementById("species").value = profile.species
+  document.getElementById("minMoisture").value = profile.min_soil_moisture
+  document.getElementById("maxMoisture").value = profile.max_soil_moisture
+  document.getElementById("tempMin").value = profile.optimal_temperature_min
+  document.getElementById("tempMax").value = profile.optimal_temperature_max
+  document.getElementById("waterReq").value = profile.water_requirement_mm
+}
+
+loadCropProfiles()
 
 /* -------------------- AUTH -------------------- */
 
