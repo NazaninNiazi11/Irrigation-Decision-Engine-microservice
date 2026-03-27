@@ -7,13 +7,18 @@ from app.interfaces.auth_routes import auth_router
 
 # Import models so Base.metadata knows about them
 from app.models import models  # noqa: F401
-
+from app.database.seed import seed_db
 from fastapi.middleware.cors import CORSMiddleware
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Create database tables on startup."""
     Base.metadata.create_all(bind=engine)
+
+    print("seeding db")
+    seed_db()
+
     yield
 
 
@@ -30,6 +35,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 app.include_router(auth_router)
 app.include_router(router)

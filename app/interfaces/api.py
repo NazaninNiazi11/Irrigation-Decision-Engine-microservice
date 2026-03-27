@@ -31,9 +31,9 @@ def health_check():
 # ── Crop Profiles (no auth) ──
 
 @router.get("/crop-profiles", response_model=List[CropProfileResponse], tags=["Crops"])
-def list_crop_profiles():
-    """Return predefined crop profiles with scientifically-accurate default parameters."""
-    return _crop_profiles
+def list_crop_profiles(db: Session = Depends(get_db)):
+    """Return crop profiles. """
+    return db.query(Crop).all()
 
 
 # ── Crops ──

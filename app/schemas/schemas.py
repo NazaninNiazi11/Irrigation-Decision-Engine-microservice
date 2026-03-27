@@ -52,16 +52,22 @@ class CropResponse(BaseModel):
         from_attributes = True
 
 
+
 class CropProfileResponse(BaseModel):
-    key: str
+    id: int
     name: str
-    species: str
-    description: Optional[str] = None
+    species: Optional[str]
     min_soil_moisture: float
     max_soil_moisture: float
-    optimal_temperature_min: float
-    optimal_temperature_max: float
-    water_requirement_mm: float
+
+    optimal_temperature_min: Optional[float]
+    optimal_temperature_max: Optional[float]
+
+    water_requirement_mm: Optional[float]
+
+    class Config:
+        from_attributes = True
+
 
 
 # ── Sensor Data Schemas ──
