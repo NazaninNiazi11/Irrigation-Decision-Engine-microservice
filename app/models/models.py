@@ -19,8 +19,15 @@ class Crop(Base):
 
     water_requirement_mm = Column(Float, nullable=True)
 
+    parameters_source = Column(String, nullable=True)  # "predefined" | "ai_estimated" | "user_provided"
+    parameters_notes = Column(String, nullable=True)
+
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    planted_on = Column(DateTime(timezone=True), nullable=True)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 
 class SensorData(Base):
@@ -66,6 +73,8 @@ class IrrigationDecision(Base):
 
     recommended_water_mm = Column(Float, nullable=True)
     reason = Column(String)
+
+    growth_stage = Column(String, nullable=True)
 
     status = Column(String)
 

@@ -752,6 +752,17 @@ select.input {
           <option value="">Select a predefined crop or enter manually</option>
         </select>
       </div>
+      <div class="form-field span-2">
+        <label for="aiEstimateName">Don't see your crop? Estimate with AI 🤖</label>
+        <div style="display:flex; gap:8px;">
+          <input id="aiEstimateName" class="input" placeholder="e.g. Lavender, Quinoa, Dragonfruit" style="flex:1;">
+          <button type="button" id="btnEstimate" class="btn btn-sky" onclick="estimateCropAI()" style="white-space:nowrap;">
+            <span class="spinner"></span>
+            <span class="btn-label">Estimate with AI</span>
+          </button>
+        </div>
+        <div id="aiEstimateResult" class="msg" style="margin-top:8px;"></div>
+      </div>
       <div class="form-field">
         <label for="cropName">Crop Name</label>
         <input id="cropName" class="input" placeholder="e.g. Wheat">
@@ -779,6 +790,24 @@ select.input {
       <div class="form-field span-2">
         <label for="waterReq">Water Requirement (mm)</label>
         <input id="waterReq" class="input" type="number" placeholder="5.0">
+      </div>
+      <div class="form-field span-2">
+        <label for="cropLat">Field Location 📍 <span style="font-weight:400; color:var(--text-muted); font-size:0.78rem;">(enables live weather)</span></label>
+        <div style="display:flex; gap:8px; align-items:flex-end;">
+          <div style="flex:1;">
+            <label for="cropLat" style="font-size:0.7rem; color:var(--text-muted);">Latitude</label>
+            <input id="cropLat" class="input" type="number" step="any" placeholder="52.52">
+          </div>
+          <div style="flex:1;">
+            <label for="cropLon" style="font-size:0.7rem; color:var(--text-muted);">Longitude</label>
+            <input id="cropLon" class="input" type="number" step="any" placeholder="13.41">
+          </div>
+          <button type="button" class="btn btn-ghost" onclick="useMyLocation()" style="white-space:nowrap;">📍 Use my location</button>
+        </div>
+      </div>
+      <div class="form-field span-2">
+        <label for="cropPlantedOn">Planted On <span style="font-weight:400; color:var(--text-muted); font-size:0.78rem;">(optional)</span></label>
+        <input id="cropPlantedOn" class="input" type="date">
       </div>
     </div>
 
@@ -808,21 +837,40 @@ select.input {
     <div class="card-divider"></div>
 
     <div class="form-row">
-      <div class="form-field">
+      <div class="form-field span-2">
         <label for="cropId">Crop ID</label>
-        <input id="cropId" class="input" type="number" placeholder="1">
+        <div style="display:flex; gap:8px;">
+          <input id="cropId" class="input" type="number" placeholder="1" style="flex:1;">
+          <button type="button" id="btnAutofill" class="btn btn-ghost" onclick="autofillFromWeather()" style="white-space:nowrap;">
+            <span class="spinner"></span>
+            <span class="btn-label">📡 Auto-fill from weather</span>
+          </button>
+        </div>
+        <div id="autofillResult" class="msg" style="margin-top:8px;"></div>
       </div>
       <div class="form-field">
-        <label for="moisture">Soil Moisture (%)</label>
+        <label for="moisture">Soil Moisture (%) <span style="font-weight:400; color:var(--text-muted); font-size:0.78rem;">(from your soil sensor)</span></label>
         <input id="moisture" class="input" type="number" placeholder="25.5">
       </div>
       <div class="form-field">
-        <label for="temp">Temperature</label>
-        <input id="temp" class="input" type="number" placeholder="28.0">
+        <label for="temp">Temperature (°C)</label>
+        <input id="temp" class="input" type="number" step="any" placeholder="28.0">
       </div>
       <div class="form-field">
         <label for="humidity">Humidity (%)</label>
-        <input id="humidity" class="input" type="number" placeholder="60.0">
+        <input id="humidity" class="input" type="number" step="any" placeholder="60.0">
+      </div>
+      <div class="form-field">
+        <label for="rainfall">Rainfall (mm, last hour)</label>
+        <input id="rainfall" class="input" type="number" step="any" placeholder="0">
+      </div>
+      <div class="form-field">
+        <label for="wind">Wind Speed (km/h)</label>
+        <input id="wind" class="input" type="number" step="any" placeholder="12.5">
+      </div>
+      <div class="form-field">
+        <label for="solar">Solar Radiation (W/m²)</label>
+        <input id="solar" class="input" type="number" step="any" placeholder="450">
       </div>
     </div>
 
@@ -852,18 +900,8 @@ select.input {
     </div>
     <div class="card-divider"></div>
 
-    <div class="form-row">
-      <div class="form-field span-2">
-        <label for="sensorIdInput">Sensor Data ID</label>
-        <input id="sensorIdInput" class="input" type="number" placeholder="Enter the sensor data ID to evaluate">
-      </div>
-    </div>
-
-    <div class="form-footer">
-      <button id="btnDecision" class="btn btn-harvest" onclick="evaluateDecision()">
-        <span class="spinner"></span>
-        <span class="btn-label">Evaluate Decision</span>
-      </button>
+    <div id="decisionPlaceholder" style="font-size:0.88rem;color:var(--text-muted);text-align:center;padding:12px 0;">
+      Submit sensor data above to automatically evaluate irrigation.
     </div>
     <div id="decisionResult" class="decision-output"></div>
   </div>
@@ -942,6 +980,57 @@ function applyCropProfile() {
   document.getElementById("tempMin").value = profile.optimal_temperature_min
   document.getElementById("tempMax").value = profile.optimal_temperature_max
   document.getElementById("waterReq").value = profile.water_requirement_mm
+  _pendingCropSource = "predefined"
+  _pendingCropNotes = null
+  hideMsg("aiEstimateResult")
+}
+
+/* Tracks where the values currently in the form came from. */
+var _pendingCropSource = "user_provided"
+var _pendingCropNotes = null
+
+async function estimateCropAI() {
+  var name = document.getElementById("aiEstimateName").value.trim()
+  if (!name) {
+    showMsg("aiEstimateResult", "Enter a crop name to estimate.", "error")
+    return
+  }
+  hideMsg("aiEstimateResult")
+  setLoading("btnEstimate", true)
+
+  try {
+    var response = await fetch("http://localhost:8000/crops/estimate", {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ name: name })
+    })
+    var data = await response.json()
+
+    if (response.ok) {
+      document.getElementById("cropName").value = data.name
+      document.getElementById("species").value = data.species
+      document.getElementById("minMoisture").value = data.min_soil_moisture
+      document.getElementById("maxMoisture").value = data.max_soil_moisture
+      document.getElementById("tempMin").value = data.optimal_temperature_min
+      document.getElementById("tempMax").value = data.optimal_temperature_max
+      document.getElementById("waterReq").value = data.water_requirement_mm
+
+      _pendingCropSource = "ai_estimated"
+      _pendingCropNotes = data.notes
+
+      var conf = (data.confidence || "medium").toUpperCase()
+      var banner =
+        "🤖 AI-estimated for " + data.name + " (" + conf + " confidence). " +
+        "Review and adjust before saving.\n\n" + data.notes
+      showMsg("aiEstimateResult", banner, "success")
+    } else {
+      showMsg("aiEstimateResult", formatError(data.detail || "Could not estimate. Enter values manually."), "error")
+    }
+  } catch (e) {
+    showMsg("aiEstimateResult", "Connection error. Is the server running?", "error")
+  }
+
+  setLoading("btnEstimate", false)
 }
 
 loadCropProfiles()
@@ -1045,29 +1134,61 @@ function logout() {
 
 /* -------------------- CROP -------------------- */
 
+function useMyLocation() {
+  if (!navigator.geolocation) {
+    showMsg("cropResult", "Geolocation is not supported by this browser.", "error")
+    return
+  }
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      document.getElementById("cropLat").value = pos.coords.latitude.toFixed(4)
+      document.getElementById("cropLon").value = pos.coords.longitude.toFixed(4)
+    },
+    function(err) {
+      showMsg("cropResult", "Could not get location: " + err.message, "error")
+    },
+    { timeout: 10000 }
+  )
+}
+
 async function createCrop() {
   hideMsg("cropResult")
   setLoading("btnCrop", true)
 
   try {
+    var latVal = document.getElementById("cropLat").value
+    var lonVal = document.getElementById("cropLon").value
+    var plantedOnVal = document.getElementById("cropPlantedOn").value
+
+    var body = {
+      name: document.getElementById("cropName").value,
+      species: document.getElementById("species").value,
+      min_soil_moisture: Number(document.getElementById("minMoisture").value),
+      max_soil_moisture: Number(document.getElementById("maxMoisture").value),
+      optimal_temperature_min: Number(document.getElementById("tempMin").value),
+      optimal_temperature_max: Number(document.getElementById("tempMax").value),
+      water_requirement_mm: Number(document.getElementById("waterReq").value),
+      parameters_source: _pendingCropSource,
+      parameters_notes: _pendingCropNotes
+    }
+    if (latVal !== "") body.latitude = Number(latVal)
+    if (lonVal !== "") body.longitude = Number(lonVal)
+    if (plantedOnVal !== "") body.planted_on = new Date(plantedOnVal).toISOString()
+
     var response = await fetch("http://localhost:8000/crops", {
       method: "POST",
       headers: authHeaders(),
-      body: JSON.stringify({
-        name: document.getElementById("cropName").value,
-        species: document.getElementById("species").value,
-        min_soil_moisture: Number(document.getElementById("minMoisture").value),
-        max_soil_moisture: Number(document.getElementById("maxMoisture").value),
-        optimal_temperature_min: Number(document.getElementById("tempMin").value),
-        optimal_temperature_max: Number(document.getElementById("tempMax").value),
-        water_requirement_mm: Number(document.getElementById("waterReq").value)
-      })
+      body: JSON.stringify(body)
     })
     var data = await response.json()
 
     if (response.ok) {
-      showMsg("cropResult", "Crop registered successfully with ID: " + data.id, "success")
+      var srcLabel = _pendingCropSource === "ai_estimated" ? " (🤖 AI-estimated)" :
+                     _pendingCropSource === "predefined" ? " (predefined)" : ""
+      showMsg("cropResult", "Crop registered successfully with ID: " + data.id + srcLabel, "success")
       document.getElementById("cropId").value = data.id
+      _pendingCropSource = "user_provided"
+      _pendingCropNotes = null
     } else {
       showMsg("cropResult", formatError(data.detail || "Failed to create crop"), "error")
     }
@@ -1080,25 +1201,79 @@ async function createCrop() {
 
 /* -------------------- SENSOR -------------------- */
 
+async function autofillFromWeather() {
+  var cropId = document.getElementById("cropId").value
+  if (!cropId) {
+    showMsg("autofillResult", "Enter a Crop ID first.", "error")
+    return
+  }
+  hideMsg("autofillResult")
+  setLoading("btnAutofill", true)
+
+  try {
+    var response = await fetch("http://localhost:8000/weather/current?crop_id=" + encodeURIComponent(cropId), {
+      headers: authHeaders()
+    })
+    var data = await response.json()
+
+    if (response.ok) {
+      var c = data.current || {}
+      document.getElementById("temp").value = c.temperature
+      document.getElementById("humidity").value = c.humidity
+      document.getElementById("rainfall").value = c.rainfall_mm
+      document.getElementById("wind").value = c.wind_speed
+      document.getElementById("solar").value = c.solar_radiation
+
+      var soilNote = ""
+      if (c.soil_moisture != null) {
+        document.getElementById("moisture").value = c.soil_moisture
+        soilNote = " Soil moisture is a coarse satellite estimate (~9km) — override with your soil sensor reading if you have one."
+      } else {
+        soilNote = " Soil moisture wasn't available — please enter it manually."
+      }
+
+      var f = data.forecast || {}
+      var msg = "📡 Filled from Open-Meteo. " + (f.summary || "") + soilNote
+      showMsg("autofillResult", msg, "success")
+    } else {
+      showMsg("autofillResult", formatError(data.detail || "Could not fetch weather"), "error")
+    }
+  } catch (e) {
+    showMsg("autofillResult", "Connection error. Is the server running?", "error")
+  }
+
+  setLoading("btnAutofill", false)
+}
+
+function _numOrNull(id) {
+  var v = document.getElementById(id).value
+  return v === "" ? null : Number(v)
+}
+
 async function submitSensor() {
   hideMsg("sensorResult")
   setLoading("btnSensor", true)
 
   try {
+    var body = {
+      crop_id: Number(document.getElementById("cropId").value),
+      soil_moisture: Number(document.getElementById("moisture").value),
+      temperature: Number(document.getElementById("temp").value),
+      humidity: _numOrNull("humidity"),
+      rainfall_mm: _numOrNull("rainfall"),
+      wind_speed: _numOrNull("wind"),
+      solar_radiation: _numOrNull("solar")
+    }
     var response = await fetch("http://localhost:8000/sensor-data", {
       method: "POST",
       headers: authHeaders(),
-      body: JSON.stringify({
-        crop_id: Number(document.getElementById("cropId").value),
-        soil_moisture: Number(document.getElementById("moisture").value),
-        temperature: Number(document.getElementById("temp").value),
-        humidity: Number(document.getElementById("humidity").value)
-      })
+      body: JSON.stringify(body)
     })
     var data = await response.json()
 
     if (response.ok) {
-      showMsg("sensorResult", "Sensor data stored with ID: " + data.id, "success")
+      showMsg("sensorResult", "Sensor data stored with ID: " + data.id + " — evaluating irrigation...", "success")
+      evaluateDecision(data.id)
     } else {
       showMsg("sensorResult", formatError(data.detail || "Failed to submit"), "error")
     }
@@ -1111,20 +1286,15 @@ async function submitSensor() {
 
 /* -------------------- DECISION -------------------- */
 
-async function evaluateDecision() {
-  var sensorId = document.getElementById("sensorIdInput").value
+async function evaluateDecision(sensorId) {
   var resultEl = document.getElementById("decisionResult")
+  var placeholder = document.getElementById("decisionPlaceholder")
 
-  if (!sensorId) {
-    resultEl.className = "decision-output"
-    showMsg("decisionResult", "Please enter a sensor data ID", "error")
-    resultEl.className = "msg visible error"
-    return
-  }
+  if (!sensorId) return
 
+  if (placeholder) placeholder.style.display = "none"
   resultEl.className = "decision-output"
   resultEl.innerHTML = ""
-  setLoading("btnDecision", true)
 
   try {
     var response = await fetch(
@@ -1141,13 +1311,18 @@ async function evaluateDecision() {
         : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>'
       var bannerText = irrigate ? "Irrigation Recommended" : "No Irrigation Needed"
 
+      var growthHtml = data.growth_stage
+        ? '<div class="decision-stage" style="margin:12px 0; padding:10px 14px; background:var(--surface-alt); border-radius:var(--radius-sm); font-size:0.85rem; color:var(--text-muted);">🌱 <strong>Growth stage:</strong> ' + data.growth_stage + '</div>'
+        : ''
+
       resultEl.innerHTML =
         '<div class="decision-banner ' + bannerClass + '">' + bannerIcon + bannerText + '</div>' +
         '<div class="decision-metrics">' +
           '<div class="metric"><div class="metric-label">Stress Level</div><div class="metric-value">' + data.stress_level + '</div></div>' +
           '<div class="metric"><div class="metric-label">Irrigate</div><div class="metric-value">' + (irrigate ? "Yes" : "No") + '</div></div>' +
-          '<div class="metric"><div class="metric-label">Water Needed</div><div class="metric-value">' + data.recommended_water_mm + ' mm</div></div>' +
+          '<div class="metric"><div class="metric-label">Water Needed</div><div class="metric-value">' + (data.recommended_water_mm != null ? data.recommended_water_mm + ' mm' : '—') + '</div></div>' +
         '</div>' +
+        growthHtml +
         '<div class="decision-reason">"' + data.reason + '"</div>'
       resultEl.className = "decision-output visible"
     } else {
@@ -1159,7 +1334,6 @@ async function evaluateDecision() {
     resultEl.className = "decision-output visible"
   }
 
-  setLoading("btnDecision", false)
 }
 
 /* -------------------- ENTER KEY SUPPORT -------------------- */

@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -8,11 +8,14 @@ from app.database.connection import get_db
 from app.models.models import Crop, SensorData, IrrigationDecision, User
 from app.schemas.schemas import (
     CropCreate, CropResponse, CropProfileResponse,
+    EstimateCropRequest, EstimatedCropResponse,
     SensorDataCreate, SensorDataResponse,
     IrrigationDecisionResponse, IrrigationDecisionUpdate,
 )
 from app.services.irrigation_service import IrrigationService
+from app.services import crop_estimator, weather_service
 from app.auth import get_current_user
+from app.rate_limit import limiter
 
 router = APIRouter()
 
@@ -38,6 +41,16 @@ def list_crop_profiles(db: Session = Depends(get_db)):
 
 # ── Crops ──
 
+@router.post("/crops/estimate", response_model=EstimatedCropResponse, tags=["Crops"])
+@limiter.limit("10/minute")
+def estimate_crop(request: Request, body: EstimateCropRequest, current_user: User = Depends(get_current_user)):
+    """Use AI to estimate irrigation parameters for a crop not in the predefined list.
+
+    Returns suggested values the user can review and edit before saving via POST /crops.
+    """
+    return crop_estimator.estimate_crop_parameters(body.name, body.species)
+
+
 @router.post("/crops", response_model=CropResponse, status_code=201, tags=["Crops"])
 def create_crop(crop: CropCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Register a new crop with its moisture and temperature thresholds."""
@@ -60,6 +73,34 @@ def get_crop(crop_id: int, db: Session = Depends(get_db), current_user: User = D
     if not crop:
         raise HTTPException(status_code=404, detail="Crop not found")
     return crop
+
+
+# ── Weather (used for sensor autofill and decision context) ──
+
+@router.get("/weather/current", tags=["Weather"])
+@limiter.limit("60/minute")
+def current_weather(
+    request: Request,
+    crop_id: int = Query(..., description="Crop ID — uses its registered location"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Fetch current weather + 24h forecast for a crop's location (Open-Meteo)."""
+    crop = db.query(Crop).filter(Crop.id == crop_id).first()
+    if not crop:
+        raise HTTPException(status_code=404, detail="Crop not found")
+    if crop.latitude is None or crop.longitude is None:
+        raise HTTPException(
+            status_code=400,
+            detail="This crop has no location set. Edit the crop and add latitude/longitude to enable live weather.",
+        )
+    weather = weather_service.get_current_weather(crop.latitude, crop.longitude)
+    if weather is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Weather service unavailable. Please enter sensor values manually.",
+        )
+    return weather
 
 
 # ── Sensor Data ──
@@ -103,7 +144,8 @@ def get_sensor_data(sensor_id: int, db: Session = Depends(get_db), current_user:
 # ── Irrigation Decisions ──
 
 @router.post("/decisions/evaluate/{sensor_data_id}", response_model=IrrigationDecisionResponse, status_code=201, tags=["Decisions"])
-def evaluate_irrigation(sensor_data_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+@limiter.limit("30/minute")
+def evaluate_irrigation(request: Request, sensor_data_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Analyze sensor data and generate an irrigation decision."""
     try:
         decision = IrrigationService.evaluate_and_store(db, sensor_data_id)

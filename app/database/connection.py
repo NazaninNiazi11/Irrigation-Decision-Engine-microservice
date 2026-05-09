@@ -4,8 +4,8 @@ import os
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://irrigation_user:irrigation_pass@db:5432/irrigation_db"
-) 
+    "postgresql://irrigation_user:irrigation_pass@localhost:5433/irrigation_db"
+)
 
 engine = create_engine(
     DATABASE_URL,

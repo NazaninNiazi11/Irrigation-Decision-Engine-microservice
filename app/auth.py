@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.database.connection import get_db
 from app.models.models import User
 
-SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
+SECRET_KEY = os.getenv("SECRET_KEY", "")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
