@@ -265,6 +265,8 @@ The same suite runs on every push and pull request via `.github/workflows/ci.yml
 | Shada Daab        | [@shadatr](https://github.com/shadatr)                |
 | Özge Zelal Küçük  | [@ozge-devops](https://github.com/ozge-devops)        |
 | Danya Eusmanaga   | [@danyaosman](https://github.com/danyaosman)          |
+| Damla Daştan   | [@Damladstn-](https://github.com/damladstn/Damladstn-)          |
+
 
 ## Course
 
