@@ -28,3 +28,4 @@ jobs:
           # Kodlari firlatiyoruz
           git remote add hf https://ozgezelal:$HF_TOKEN@huggingface.co/spaces/ozgezelal/irrigation-decision-demo
           git push --force hf main
+          git remote add hf https://ozgezelal:$HF_TOKEN@huggingface.co/spaces/ozgezelal/irrigation-decision-demo
