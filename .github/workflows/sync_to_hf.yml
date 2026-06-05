@@ -1,0 +1,30 @@
+name: Sync to Hugging Face Spaces
+
+on:
+  push:
+    branches: [ main ] # main branch'e her kod yuklendiginde tetiklenir
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Push to Hugging Face
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          # Hugging Face'e uygulamanin baslangic dosyasinin demo.py oldugunu söylüyoruz
+          echo "app_file: demo.py" >> README.md
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add README.md
+          git commit -m "Update app_file config for HF Space" || true
+          
+          # Kodlari firlatiyoruz
+          git remote add hf https://ozgezelal:$HF_TOKEN@huggingface.co/spaces/ozgezelal/irrigation-decision-demo
+          git push --force hf main
